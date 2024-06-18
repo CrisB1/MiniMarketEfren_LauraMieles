@@ -1,13 +1,31 @@
 <?php
-$productos = [];
+session_start();
 
-function agregarProducto($nombre, $precio, $cantidad) {
-    global $productos;
-    $productos[] = ['nombre' => $nombre, 'precio' => $precio, 'cantidad' => $cantidad];
+// Inicializar el array de productos si no está ya en la sesión
+if (!isset($_SESSION['productos'])) {
+    $_SESSION['productos'] = [];
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $productName = $_POST['productName'];
+    $productPrice = floatval($_POST['productPrice']);
+    $productQuantity = intval($_POST['productQuantity']);
+
+    if (!empty($productName) && $productPrice > 0 && $productQuantity >= 0) {
+        $_SESSION['productos'][] = [
+            'nombre' => $productName,
+            'precio' => $productPrice,
+            'cantidad' => $productQuantity
+        ];
+    }
 }
 
 function mostrarProductos() {
-    global $productos;
+    if (!isset($_SESSION['productos']) || empty($_SESSION['productos'])) {
+        echo '<p class="text-center text-gray-500">No hay productos en el inventario.</p>';
+        return;
+    }
+
     echo '<div class="w-full max-w-xl">
             <table class="w-full border-collapse border border-gray-300">
                 <thead>
@@ -21,15 +39,15 @@ function mostrarProductos() {
                 </thead>
                 <tbody>';
 
-    foreach ($productos as $producto) {
+    foreach ($_SESSION['productos'] as $producto) {
         $total = $producto['precio'] * $producto['cantidad'];
         $estado = $producto['cantidad'] === 0 ? 'Agotado' : 'En Stock';
 
         echo '<tr>
-                <td class="border border-gray-300 px-4 py-2">' . $producto['nombre'] . '</td>
-                <td class="border border-gray-300 px-4 py-2">' . $producto['precio'] . '</td>
+                <td class="border border-gray-300 px-4 py-2">' . htmlspecialchars($producto['nombre']) . '</td>
+                <td class="border border-gray-300 px-4 py-2">' . number_format($producto['precio'], 2) . '</td>
                 <td class="border border-gray-300 px-4 py-2">' . $producto['cantidad'] . '</td>
-                <td class="border border-gray-300 px-4 py-2">' . $total . '</td>
+                <td class="border border-gray-300 px-4 py-2">' . number_format($total, 2) . '</td>
                 <td class="border border-gray-300 px-4 py-2">' . $estado . '</td>
             </tr>';
     }
@@ -39,18 +57,5 @@ function mostrarProductos() {
     </div>';
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['productName']) && isset($_POST['productPrice']) && isset($_POST['productQuantity'])) {
-        $productName = $_POST['productName'];
-        $productPrice = floatval($_POST['productPrice']);
-        $productQuantity = intval($_POST['productQuantity']);
-
-        if (!empty($productName) && $productPrice > 0 && $productQuantity >= 0) {
-            agregarProducto($productName, $productPrice, $productQuantity);
-        }
-    }
-}
-
 mostrarProductos();
 ?>
-
